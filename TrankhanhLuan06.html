@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuanLyTT - Hệ Thống Quản Lý Đào Tạo</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React 18 & ReactDOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel Standalone for JSX compilation in browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- SheetJS for Excel Import/Export -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- React Root Container -->
+  <div id="root"></div>
+
+  <!-- Main Application Script -->
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Custom Icon Renderer Component using Lucide
+    const Icon = ({ name, size = 18, className = "" }) => {
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }, [name]);
+
+      return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block stroke-[2.25] ${className}`}></i>;
+    };
+
+    // ============================================================================
+    // SEED DATA
+    // ============================================================================
+    const initialStudents = [
+      { id: 'TI35', name: 'Nguyễn Thành Luân', gender: 'Nam', phone: '4753456654', parentName: 'nguyễn Phi Hùng', className: '24CDTI', tuition: 'Đã đóng', status: 'Đang học' },
+      { id: 'TI34', name: 'Nguyễn Châu Quý', gender: 'Nam', phone: '938053839', parentName: '—', className: 'Starters', tuition: 'Chưa đóng', status: 'Đã nghỉ' },
+      { id: 'TI33', name: 'Phạm Thị Đan Tuyền', gender: 'Nữ', phone: '985959099', parentName: '—', className: 'Starters', tuition: 'Chưa đóng', status: 'Đã nghỉ' },
+      { id: 'TI32', name: 'Phan Ngọc Châu', gender: 'Nữ', phone: '906268696', parentName: '—', className: 'Starters', tuition: 'Chưa đóng', status: 'Đang học' },
+      { id: 'TI31', name: 'Nguyễn Hải Dương', gender: 'Nam', phone: '932974065', parentName: '—', className: 'Starters', tuition: 'Chưa đóng', status: 'Đang học' },
+      { id: 'TI30', name: 'Nguyễn Thiên Phúc', gender: 'Nam', phone: '911294567', parentName: '—', className: 'Starters', tuition: 'Chưa đóng', status: 'Đang học' },
+      { id: 'TI29', name: 'Phạm Trung Kiên', gender: 'Nam', phone: '919220099', parentName: '—', className: 'Starters', tuition: 'Chưa đóng', status: 'Đang học' },
+      { id: 'TI28', name: 'Trương Phạm Dũng', gender: 'Nam', phone: '937661929', parentName: '—', className: 'Starters', tuition: 'Chưa đóng', status: 'Đang học' },
+      { id: 'TI27', name: 'Ngô Lê Quỳnh Anh', gender: 'Nữ', phone: '977425607', parentName: '—', className: 'Starters', tuition: 'Chưa đóng', status: 'Đang học' },
+      { id: 'TI26', name: 'Nguyễn Trường Duy', gender: 'Nam', phone: '973299123', parentName: '—', className: 'Starters', tuition: 'Chưa đóng', status: 'Đang học' },
+    ];
+
+    const initialCourses = [
+      { id: 'ST001', title: 'Starters', duration: 8, fee: '330.000 đ', description: 'Khóa học tiếng Anh/tin học cơ bản dành cho mầm non & tiểu học' },
+      { id: 'KH10', title: 'Tiếng anh giao tiếp', duration: 10, fee: '1.000.000 đ', description: 'Rèn luyện phản xạ nghe nói giao tiếp thực tế' },
+      { id: 'KH08', title: 'CCCNTTCB', duration: 50, fee: '1.300.000 đ', description: 'Chứng chỉ ứng dụng công nghệ thông tin cơ bản' },
+    ];
+
+    const initialClasses = [
+      { id: 'ST1', title: 'Starters', courseName: 'Starters', teacher: 'Nguyễn Khắc Nam', schedule: '6CN', room: '207', studentCount: 0, status: 'Đang học' },
+      { id: 'LOP024', title: '24CDTI', courseName: 'Cao đẳng Công nghệ thông tin', teacher: 'Phạm Thị Cao Ngân', schedule: 'Theo thời khóa biểu Cao đẳng Bến Tre', room: 'Cao đẳng Bến Tre', studentCount: 0, status: 'Đang học' },
+      { id: 'LOP023', title: '23CDTI', courseName: 'Cao đẳng Công nghệ thông tin', teacher: 'Nguyễn Khắc Nam', schedule: 'Theo thời khóa biểu Cao đẳng Bến Tre', room: 'Cao đẳng Bến Tre', studentCount: 0, status: 'Đang học' },
+    ];
+
+    const initialTeachers = [
+      { id: 'GV001', name: 'Nguyễn Khắc Nam', specialty: 'Tin học', phone: '0312456789', email: 'pthhbentre@gmail.com', status: 'Đang giảng dạy' },
+      { id: 'GV011', name: 'Phạm Thị Cao Ngân', specialty: 'tin học', phone: '666666666', email: '—', status: 'Đang giảng dạy' },
+    ];
+
+    // Tài khoản quản trị mặc định. Admin có toàn quyền; User chỉ dùng các chức năng đào tạo.
+    const defaultUser = { username: 'admin', pass: '123456', name: 'Trần Khánh Luân', role: 'Admin' };
+    const isAdmin = (user) => user && user.role === 'Admin';
+    const allowedUserTabs = ['hoc-vien', 'khoa-hoc', 'lop-hoc', 'giao-vien'];
+
+    // ============================================================================
+    // MAIN APP COMPONENT
+    // ============================================================================
+    function App() {
+      // Auth State
+      const [currentUser, setCurrentUser] = useState(() => {
+        const saved = localStorage.getItem('quanlytt_user');
+        return saved ? JSON.parse(saved) : null;
+      });
+      
+      const [authMode, setAuthMode] = useState('login');
+      const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+      const [regForm, setRegForm] = useState({ username: '', password: '', fullName: '', role: 'User' });
+      const [authError, setAuthError] = useState('');
+
+      // Screen Active State
+      const [activeTab, setActiveTab] = useState('hoc-vien');
+      const changeTab = (tab) => {
+        if (tab === 'database' && !isAdmin(currentUser)) {
+          alert('Chức năng này chỉ dành cho Admin!');
+          return;
+        }
+        if (!isAdmin(currentUser) && !allowedUserTabs.includes(tab)) {
+          alert('Tài khoản User không có quyền truy cập mục này!');
+          return;
+        }
+        setActiveTab(tab);
+      };
+
+      // Database State with localStorage support
+      const [students, setStudents] = useState(() => {
+        const saved = localStorage.getItem('db_students');
+        if (!saved) return initialStudents;
+        return JSON.parse(saved).map(s => ({
+          ...s,
+          className: ['Tin học lớp 8,9', 'Tin học lớp 6,7'].includes(s.className) ? '24CDTI' : s.className
+        }));
+      });
+
+      const [courses, setCourses] = useState(() => {
+        const saved = localStorage.getItem('db_courses');
+        if (!saved) return initialCourses;
+        return JSON.parse(saved).filter(c => c.title !== 'Tin học thiếu nhi THCS');
+      });
+
+      const [classes, setClasses] = useState(() => {
+        const saved = localStorage.getItem('db_classes');
+        if (!saved) return initialClasses;
+        const oldClasses = JSON.parse(saved).filter(c => !['Tin học lớp 8,9', 'Tin học lớp 6,7'].includes(c.title));
+        const newClassNames = oldClasses.map(c => c.title);
+        return [
+          ...oldClasses,
+          ...initialClasses.filter(c => ['24CDTI', '23CDTI'].includes(c.title) && !newClassNames.includes(c.title))
+        ];
+      });
+
+      const [teachers, setTeachers] = useState(() => {
+        const saved = localStorage.getItem('db_teachers');
+        return saved ? JSON.parse(saved) : initialTeachers;
+      });
+
+      // Filter state
+      const [searchQuery, setSearchQuery] = useState('');
+      const [selectedClassFilter, setSelectedClassFilter] = useState('Tất cả lớp');
+      const [selectedStatusFilter, setSelectedStatusFilter] = useState('Tất cả trạng thái');
+
+      // Modal State
+      const [isModalOpen, setIsModalOpen] = useState(false);
+      const [modalType, setModalType] = useState('');
+      const [newItemData, setNewItemData] = useState({});
+
+      // Import State
+      const [importTargetCategory, setImportTargetCategory] = useState('students');
+      const [importPreviewData, setImportPreviewData] = useState([]);
+      const [importFileName, setImportFileName] = useState('');
+      const [importMode, setImportMode] = useState('merge');
+      const [importError, setImportError] = useState('');
+
+      // Auto save to LocalStorage
+      useEffect(() => { localStorage.setItem('db_students', JSON.stringify(students)); }, [students]);
+      useEffect(() => { localStorage.setItem('db_courses', JSON.stringify(courses)); }, [courses]);
+      useEffect(() => { localStorage.setItem('db_classes', JSON.stringify(classes)); }, [classes]);
+      useEffect(() => { localStorage.setItem('db_teachers', JSON.stringify(teachers)); }, [teachers]);
+
+      useEffect(() => {
+        if (window.lucide) window.lucide.createIcons();
+      });
+
+      // Handlers
+      const handleLogin = (e) => {
+        e.preventDefault();
+        setAuthError('');
+        const users = JSON.parse(localStorage.getItem('quanlytt_registered_users') || '[]');
+        
+        if ((loginForm.username === 'admin' && loginForm.password === '123456') ||
+            (loginForm.username === defaultUser.username && loginForm.password === defaultUser.pass)) {
+          const user = defaultUser;
+          setCurrentUser(user);
+          localStorage.setItem('quanlytt_user', JSON.stringify(user));
+          return;
+        }
+
+        const found = users.find(u => u.username === loginForm.username && u.password === loginForm.password);
+        if (found) {
+          const user = { username: found.username, name: found.fullName, role: found.role };
+          setCurrentUser(user);
+          localStorage.setItem('quanlytt_user', JSON.stringify(user));
+        } else {
+          setAuthError('Tài khoản hoặc mật khẩu không đúng!');
+        }
+      };
+
+      const handleRegister = (e) => {
+        e.preventDefault();
+        setAuthError('');
+        if (!regForm.username || !regForm.password || !regForm.fullName) {
+          setAuthError('Vui lòng nhập đủ thông tin!');
+          return;
+        }
+
+        const users = JSON.parse(localStorage.getItem('quanlytt_registered_users') || '[]');
+        if (users.some(u => u.username === regForm.username) || regForm.username === 'admin') {
+          setAuthError('Tên đăng nhập đã được dùng!');
+          return;
+        }
+
+        const newUser = { username: regForm.username, password: regForm.password, fullName: regForm.fullName, role: 'User' };
+        users.push(newUser);
+        localStorage.setItem('quanlytt_registered_users', JSON.stringify(users));
+        
+        const loggedInUser = { username: newUser.username, name: newUser.fullName, role: newUser.role };
+        setCurrentUser(loggedInUser);
+        localStorage.setItem('quanlytt_user', JSON.stringify(loggedInUser));
+      };
+
+      const handleLogout = () => {
+        setCurrentUser(null);
+        localStorage.removeItem('quanlytt_user');
+      };
+
+      const handleDeleteItem = (type, id) => {
+        if (window.confirm('Bạn muốn xóa mục này khỏi cơ sở dữ liệu?')) {
+          if (type === 'student') setStudents(students.filter(s => s.id !== id));
+          if (type === 'course') setCourses(courses.filter(c => c.id !== id));
+          if (type === 'class') setClasses(classes.filter(c => c.id !== id));
+          if (type === 'teacher') setTeachers(teachers.filter(t => t.id !== id));
+        }
+      };
+
+      const handleResetDB = () => {
+        if (window.confirm('Khôi phục cơ sở dữ liệu về mặc định?')) {
+          setStudents(initialStudents);
+          setCourses(initialCourses);
+          setClasses(initialClasses);
+          setTeachers(initialTeachers);
+          localStorage.clear();
+          alert('Khôi phục thành công!');
+        }
+      };
+
+      // Excel Import Reader
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setImportFileName(file.name);
+        setImportError('');
+        setImportPreviewData([]);
+
+        const fileExt = file.name.split('.').pop().toLowerCase();
+
+        if (fileExt === 'json') {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            try {
+              const parsed = JSON.parse(evt.target.result);
+              setImportPreviewData(Array.isArray(parsed) ? parsed : (parsed.students || []));
+            } catch (err) {
+              setImportError('File JSON bị sai cú pháp');
+            }
+          };
+          reader.readAsText(file);
+        } else {
+          if (!window.XLSX) {
+            setImportError('Đang tải thư viện đọc Excel...');
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            try {
+              const data = new Uint8Array(evt.target.result);
+              const workbook = window.XLSX.read(data, { type: 'array' });
+              const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+              const jsonData = window.XLSX.utils.sheet_to_json(worksheet);
+
+              if (!jsonData || jsonData.length === 0) {
+                setImportError('File rỗng!');
+                return;
+              }
+
+              const mapped = jsonData.map(row => {
+                if (importTargetCategory === 'students') {
+                  return {
+                    id: row['Mã HV'] || row['id'] || `TI${Math.floor(10 + Math.random() * 90)}`,
+                    name: row['Họ và tên'] || row['name'] || 'Học viên mới',
+                    gender: row['Giới tính'] || row['gender'] || 'Nam',
+                    phone: String(row['SĐT'] || row['phone'] || ''),
+                    parentName: row['Họ tên PH'] || row['parentName'] || '—',
+                    className: row['Lớp'] || row['className'] || 'Starters',
+                    tuition: row['Học phí'] || row['tuition'] || 'Chưa đóng',
+                    status: row['Trạng thái'] || row['status'] || 'Đang học'
+                  };
+                }
+                return row;
+              });
+
+              setImportPreviewData(mapped);
+            } catch (err) {
+              setImportError('Lỗi đọc file: ' + err.message);
+            }
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      };
+
+      const handleConfirmImport = () => {
+        if (importPreviewData.length === 0) return;
+        if (importTargetCategory === 'students') {
+          if (importMode === 'overwrite') setStudents(importPreviewData);
+          else {
+            const merged = [...importPreviewData];
+            students.forEach(s => { if (!merged.some(m => m.id === s.id)) merged.push(s); });
+            setStudents(merged);
+          }
+        }
+        alert(`Đã nạp ${importPreviewData.length} dòng dữ liệu!`);
+        setIsModalOpen(false);
+      };
+
+      const exportCurrentDBToExcel = () => {
+        if (!window.XLSX) return;
+        const wb = window.XLSX.utils.book_new();
+
+        const wsStudents = window.XLSX.utils.json_to_sheet(students);
+        window.XLSX.utils.book_append_sheet(wb, wsStudents, 'HocVien');
+
+        const wsCourses = window.XLSX.utils.json_to_sheet(courses);
+        window.XLSX.utils.book_append_sheet(wb, wsCourses, 'KhoaHoc');
+
+        const wsClasses = window.XLSX.utils.json_to_sheet(classes);
+        window.XLSX.utils.book_append_sheet(wb, wsClasses, 'LopHoc');
+
+        const wsTeachers = window.XLSX.utils.json_to_sheet(teachers);
+        window.XLSX.utils.book_append_sheet(wb, wsTeachers, 'GiaoVien');
+
+        window.XLSX.writeFile(wb, 'QuanLyTT_Full_CSDL.xlsx');
+      };
+
+      const handleSaveNewItem = (e) => {
+        e.preventDefault();
+        if (modalType === 'ADD_STUDENT') {
+          const newSt = {
+            id: newItemData.id || `TI${Math.floor(10 + Math.random() * 90)}`,
+            name: newItemData.name || 'Học viên mới',
+            gender: newItemData.gender || 'Nam',
+            phone: newItemData.phone || '0900000000',
+            parentName: newItemData.parentName || '—',
+            className: newItemData.className || 'Starters',
+            tuition: newItemData.tuition || 'Chưa đóng',
+            status: newItemData.status || 'Đang học',
+          };
+          setStudents([newSt, ...students]);
+        }
+        setIsModalOpen(false);
+        setNewItemData({});
+      };
+
+      const toggleStudentPayment = (id) => {
+        setStudents(students.map(s => s.id === id ? { ...s, tuition: s.tuition === 'Đã đóng' ? 'Chưa đóng' : 'Đã đóng' } : s));
+      };
+
+      // AUTH SCREEN
+      if (!currentUser) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-white/20">
+              <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 text-white text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center font-black text-3xl mx-auto mb-3 border border-white/30">Q</div>
+                <h1 className="text-3xl font-extrabold tracking-tight">QuanLyTT</h1>
+                <p className="text-indigo-100 text-xs mt-1">Hệ thống quản lý đào tạo thông minh</p>
+              </div>
+
+              <div className="p-8">
+                <div className="flex bg-slate-100 rounded-xl p-1 mb-6">
+                  <button onClick={() => setAuthMode('login')} className={`flex-1 py-2 text-xs font-bold rounded-lg ${authMode === 'login' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow' : 'text-slate-500'}`}>Đăng nhập</button>
+                  <button onClick={() => setAuthMode('register')} className={`flex-1 py-2 text-xs font-bold rounded-lg ${authMode === 'register' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow' : 'text-slate-500'}`}>Tạo tài khoản</button>
+                </div>
+
+                {authError && <div className="mb-4 p-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold">{authError}</div>}
+
+                {authMode === 'login' ? (
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Tên tài khoản</label>
+                      <input type="text" required placeholder="Nhập 'admin'" value={loginForm.username} onChange={e => setLoginForm({...loginForm, username: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Mật khẩu</label>
+                      <input type="password" required placeholder="Nhập '123456'" value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    </div>
+                    <div className="bg-indigo-50 p-3 rounded-xl text-xs text-indigo-900">
+                      💡 Tài khoản dùng thử: <strong>admin</strong> / <strong>123456</strong>
+                    </div>
+                    <button type="submit" className="w-full py-3 bg-gradient-to-r from-indigo-600 to-pink-600 text-white font-bold rounded-xl shadow-lg hover:opacity-95 text-xs uppercase tracking-wider">Đăng nhập</button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleRegister} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Họ tên</label>
+                      <input type="text" required placeholder="Nguyễn Văn A" value={regForm.fullName} onChange={e => setRegForm({...regForm, fullName: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-xs font-medium" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Tên đăng nhập</label>
+                      <input type="text" required placeholder="Tên tài khoản mới" value={regForm.username} onChange={e => setRegForm({...regForm, username: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-xs font-medium" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Mật khẩu</label>
+                      <input type="password" required placeholder="Mật khẩu" value={regForm.password} onChange={e => setRegForm({...regForm, password: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-xs font-medium" />
+                    </div>
+                    <div className="bg-slate-50 border rounded-xl p-3 text-xs text-slate-600">Tài khoản đăng ký mới mặc định có quyền <strong>User</strong>. Quyền Admin chỉ được cấp bởi quản trị viên.</div>
+                    <button type="submit" className="w-full py-3 bg-gradient-to-r from-emerald-500 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:opacity-95 text-xs uppercase tracking-wider">Tạo tài khoản</button>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Filtered Students
+      const filteredStudents = students.filter(student => {
+        const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) || student.id.toLowerCase().includes(searchQuery.toLowerCase()) || student.phone.includes(searchQuery);
+        const matchesClass = selectedClassFilter === 'Tất cả lớp' || student.className === selectedClassFilter;
+        const matchesStatus = selectedStatusFilter === 'Tất cả trạng thái' || student.status === selectedStatusFilter;
+        return matchesSearch && matchesClass && matchesStatus;
+      });
+
+      return (
+        <div className="flex h-screen bg-slate-100 font-sans overflow-hidden text-slate-800">
+          
+          {/* SIDEBAR VIBRANT */}
+          <aside className="w-64 bg-slate-950 text-slate-300 flex flex-col justify-between border-r border-slate-800 shrink-0 shadow-xl">
+            <div>
+              <div className="p-4 flex items-center gap-3 border-b border-slate-800 bg-slate-900/50">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white font-black text-xl rounded-xl flex items-center justify-center shadow-lg">Q</div>
+                <div>
+                  <h1 className="font-extrabold text-white text-base">QuanLyTT</h1>
+                  <p className="text-[11px] text-indigo-400 font-medium">Hệ thống quản lý đào tạo</p>
+                </div>
+              </div>
+
+              <nav className="p-3 space-y-4 text-xs font-bold">
+                <div>
+                  <p className="px-3 text-[10px] text-slate-500 uppercase tracking-widest mb-2">Đào tạo</p>
+                  <div className="space-y-1">
+                    <button onClick={() => changeTab('hoc-vien')} className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${activeTab === 'hoc-vien' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : 'hover:bg-slate-900 hover:text-white'}`}>
+                      <Icon name="users" className="text-pink-400" /> Học viên
+                    </button>
+                    <button onClick={() => changeTab('khoa-hoc')} className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${activeTab === 'khoa-hoc' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : 'hover:bg-slate-900 hover:text-white'}`}>
+                      <Icon name="book-open" className="text-amber-400" /> Khóa học
+                    </button>
+                    <button onClick={() => changeTab('lop-hoc')} className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${activeTab === 'lop-hoc' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : 'hover:bg-slate-900 hover:text-white'}`}>
+                      <Icon name="layers" className="text-cyan-400" /> Lớp học
+                    </button>
+                    <button onClick={() => changeTab('giao-vien')} className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${activeTab === 'giao-vien' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : 'hover:bg-slate-900 hover:text-white'}`}>
+                      <Icon name="graduation-cap" className="text-emerald-400" /> Giáo viên
+                    </button>
+                  </div>
+                </div>
+
+                {isAdmin(currentUser) && <div>
+                  <p className="px-3 text-[10px] text-slate-500 uppercase tracking-widest mb-2">Hệ thống</p>
+                  <button onClick={() => changeTab('database')} className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${activeTab === 'database' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : 'hover:bg-slate-900 hover:text-white'}`}>
+                    <Icon name="database" className="text-blue-400" /> Quản lý CSDL
+                  </button>
+                </div>}
+              </nav>
+            </div>
+
+            <div className="p-4 border-t border-slate-800 bg-slate-900/60">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-purple-500 flex items-center justify-center font-bold text-white text-xs">
+                  {currentUser.name ? currentUser.name.charAt(0) : 'U'}
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">{currentUser.name}</h4>
+                  <p className="text-[10px] text-indigo-300">{currentUser.role}</p>
+                </div>
+              </div>
+              <button onClick={handleLogout} className="w-full py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs flex items-center justify-center gap-2">
+                <Icon name="log-out" size={14} /> Đăng xuất
+              </button>
+            </div>
+          </aside>
+
+          {/* MAIN CONTAINER */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-100">
+            <header className="h-16 bg-white border-b px-6 flex items-center justify-between shadow-xs sticky top-0 z-10">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <span className="text-indigo-600 font-bold">QuanLyTT</span> / <span className="text-slate-900 uppercase font-bold">{activeTab.replace('-', ' ')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {activeTab === 'hoc-vien' && <button onClick={() => { setModalType('IMPORT_EXCEL'); setImportTargetCategory('students'); setIsModalOpen(true); }} className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold rounded-xl text-xs shadow-md hover:opacity-95">
+                  <Icon name="file-spreadsheet" size={14} /> Import Excel
+                </button>}
+                <button onClick={exportCurrentDBToExcel} className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl text-xs shadow-md hover:opacity-95">
+                  <Icon name="download" size={14} /> Export CSDL
+                </button>
+              </div>
+            </header>
+
+            <main className="flex-1 overflow-auto p-6">
+              {/* PAGE: HỌC VIÊN */}
+              {activeTab === 'hoc-vien' && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border shadow-sm">
+                    <div>
+                      <h1 className="text-2xl font-black text-slate-900">Học viên</h1>
+                      <p className="text-xs text-slate-500 font-medium">Quản lý hồ sơ học viên & học phí</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => { setModalType('IMPORT_EXCEL'); setIsModalOpen(true); }} className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md hover:opacity-95">
+                        <Icon name="file-spreadsheet" size={16} /> Import Excel
+                      </button>
+                      <button onClick={() => { setModalType('ADD_STUDENT'); setIsModalOpen(true); }} className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md hover:opacity-95">
+                        <Icon name="plus" size={16} /> Thêm học viên
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Filters */}
+                  <div className="bg-white p-4 rounded-2xl border shadow-sm flex flex-wrap gap-3">
+                    <input type="text" placeholder="Tìm mã, họ tên, SĐT..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="flex-1 min-w-[200px] px-4 py-2 bg-slate-50 border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    <select value={selectedClassFilter} onChange={e => setSelectedClassFilter(e.target.value)} className="px-3 py-2 bg-slate-50 border rounded-xl text-xs font-bold text-slate-700">
+                      <option value="Tất cả lớp">Tất cả lớp</option>
+                      <option value="24CDTI">24CDTI</option>
+                      <option value="23CDTI">23CDTI</option>
+                      <option value="Starters">Starters</option>
+                    </select>
+                    <select value={selectedStatusFilter} onChange={e => setSelectedStatusFilter(e.target.value)} className="px-3 py-2 bg-slate-50 border rounded-xl text-xs font-bold text-slate-700">
+                      <option value="Tất cả trạng thái">Tất cả trạng thái</option>
+                      <option value="Đang học">Đang học</option>
+                      <option value="Đã nghỉ">Đã nghỉ</option>
+                    </select>
+                  </div>
+
+                  {/* Table */}
+                  <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="bg-slate-50 border-b text-slate-500 font-bold uppercase text-[11px]">
+                            <th className="py-3.5 px-4">Mã HV</th>
+                            <th className="py-3.5 px-4">Họ và tên</th>
+                            <th className="py-3.5 px-4">Giới tính</th>
+                            <th className="py-3.5 px-4">SĐT</th>
+                            <th className="py-3.5 px-4">Họ tên PH</th>
+                            <th className="py-3.5 px-4">Lớp</th>
+                            <th className="py-3.5 px-4 text-center">Học phí</th>
+                            <th className="py-3.5 px-4 text-center">Trạng thái</th>
+                            <th className="py-3.5 px-4 text-center">Thao tác</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                          {filteredStudents.map(st => (
+                            <tr key={st.id} className="hover:bg-indigo-50/30">
+                              <td className="py-3.5 px-4 font-bold text-indigo-700">{st.id}</td>
+                              <td className="py-3.5 px-4 font-bold text-slate-900">{st.name}</td>
+                              <td className="py-3.5 px-4">{st.gender}</td>
+                              <td className="py-3.5 px-4 font-mono">{st.phone}</td>
+                              <td className="py-3.5 px-4">{st.parentName}</td>
+                              <td className="py-3.5 px-4"><span className="px-2.5 py-1 rounded bg-slate-100 font-bold">{st.className}</span></td>
+                              <td className="py-3.5 px-4 text-center">
+                                <button onClick={() => toggleStudentPayment(st.id)} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold text-white shadow-sm ${st.tuition === 'Đã đóng' ? 'bg-emerald-500' : 'bg-rose-600'}`}>
+                                  {st.tuition}
+                                </button>
+                              </td>
+                              <td className="py-3.5 px-4 text-center">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${st.status === 'Đang học' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-500'}`}>
+                                  {st.status}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-center">
+                                <button onClick={() => handleDeleteItem('student', st.id)} className="p-1 hover:bg-rose-50 text-rose-500 rounded"><Icon name="trash-2" size={15} /></button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* OTHER PAGES SIMPLIFIED SUMMARY */}
+              {activeTab === 'khoa-hoc' && (
+                <div className="bg-white p-6 rounded-2xl border shadow-sm">
+                  <h2 className="text-xl font-bold mb-4">Danh sách Khóa học ({courses.length})</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {courses.map(c => (
+                      <div key={c.id} className="p-4 border rounded-xl bg-amber-50/30">
+                        <span className="font-bold text-amber-600">{c.id}</span>
+                        <h3 className="font-bold text-slate-900">{c.title}</h3>
+                        <p className="text-xs text-slate-500 mt-1">{c.description}</p>
+                        <p className="text-xs font-bold text-emerald-600 mt-2">Học phí: {c.fee}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'lop-hoc' && (
+                <div className="bg-white p-6 rounded-2xl border shadow-sm">
+                  <h2 className="text-xl font-bold mb-4">Danh sách Lớp học ({classes.length})</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {classes.map(cl => (
+                      <div key={cl.id} className="p-4 border rounded-xl bg-cyan-50/30">
+                        <span className="font-bold text-cyan-600">{cl.id}</span>
+                        <h3 className="font-bold text-slate-900">{cl.title}</h3>
+                        <p className="text-xs text-slate-500 mt-1">Giáo viên: {cl.teacher}</p>
+                        <p className="text-xs font-bold text-indigo-600 mt-2">Lịch học: {cl.schedule} - Phòng: {cl.room}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'giao-vien' && (
+                <div className="bg-white p-6 rounded-2xl border shadow-sm">
+                  <h2 className="text-xl font-bold mb-4">Danh sách Giáo viên ({teachers.length})</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {teachers.map(t => (
+                      <div key={t.id} className="p-4 border rounded-xl bg-emerald-50/30">
+                        <span className="font-bold text-emerald-600">{t.id}</span>
+                        <h3 className="font-bold text-slate-900">{t.name}</h3>
+                        <p className="text-xs text-slate-500 mt-1">Chuyên môn: {t.specialty}</p>
+                        <p className="text-xs font-bold text-slate-700 mt-2">SĐT: {t.phone} | Email: {t.email}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'database' && isAdmin(currentUser) && (
+                <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+                  <h2 className="text-xl font-bold">Quản lý CSDL</h2>
+                  <div className="flex gap-4">
+                    <button onClick={exportCurrentDBToExcel} className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-md">Xuất Excel CSDL</button>
+                    <button onClick={handleResetDB} className="px-4 py-2 bg-rose-600 text-white font-bold rounded-xl text-xs shadow-md">Reset Dữ liệu Mặc định</button>
+                  </div>
+                </div>
+              )}
+            </main>
+          </div>
+
+          {/* MODALS */}
+          {isModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl shadow-2xl border w-full max-w-lg p-6 space-y-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <h3 className="font-extrabold text-slate-900">
+                    {modalType === 'IMPORT_EXCEL' ? 'Import dữ liệu từ File' : 'Thêm học viên'}
+                  </h3>
+                  <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-700">✕</button>
+                </div>
+
+                {modalType === 'IMPORT_EXCEL' ? (
+                  <div className="space-y-4 text-xs">
+                    <div className="border-2 border-dashed p-6 text-center rounded-2xl bg-indigo-50/30 relative">
+                      <input type="file" accept=".xlsx, .csv, .json" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      <p className="font-bold text-slate-800">{importFileName || 'Chọn file Excel (.xlsx, .csv) hoặc JSON'}</p>
+                    </div>
+                    {importError && <p className="text-rose-600 font-bold">{importError}</p>}
+                    <button disabled={importPreviewData.length === 0} onClick={handleConfirmImport} className="w-full py-2.5 bg-emerald-600 disabled:opacity-50 text-white font-bold rounded-xl shadow-md">Xác nhận Nạp Dữ liệu</button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSaveNewItem} className="space-y-3 text-xs">
+                    <div>
+                      <label className="block font-bold mb-1">Họ và tên</label>
+                      <input type="text" required onChange={e => setNewItemData({...newItemData, name: e.target.value})} className="w-full px-3 py-2 border rounded-xl" />
+                    </div>
+                    <div>
+                      <label className="block font-bold mb-1">Số điện thoại</label>
+                      <input type="text" onChange={e => setNewItemData({...newItemData, phone: e.target.value})} className="w-full px-3 py-2 border rounded-xl" />
+                    </div>
+                    <button type="submit" className="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-md">Lưu Học Viên</button>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    // Render React to DOM
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
